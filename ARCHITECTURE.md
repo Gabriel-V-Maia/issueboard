@@ -1,386 +1,193 @@
-\# issueboard — Architecture
-
-
+# issueboard — Architecture
 
 issueboard is a desktop kanban app built with Python and customtkinter that authenticates with GitHub via device flow OAuth and surfaces TODO/WIP issues into a three-column board.
 
+---
 
-
-\---
-
-
-
-\## Package Structure
-
-
+## Package Structure
 
 ```
-
 issueboard/
-
 ├── main.py
-
 ├── issueboard/
-
 │   ├── app.py
-
 │   ├── config.py
-
 │   ├── models.py
-
 │   ├── github/
-
 │   │   ├── auth.py
-
 │   │   └── api.py
-
 │   └── ui/
-
 │       ├── colors.py
-
 │       ├── login.py
-
 │       ├── board.py
-
 │       ├── column.py
-
 │       ├── card.py
-
 │       └── detail.py
-
 └── assets/
-
-&#x20;   └── icon.ico
-
+    └── icon.ico
 ```
 
+---
 
-
-\---
-
-
-
-\## Module Dependency Graph
-
-
+## Module Dependency Graph
 
 ```mermaid
-
 graph TD
-
-&#x20;   main --> app
-
-&#x20;   app --> config
-
-&#x20;   app --> login
-
-&#x20;   app --> board
-
-&#x20;   login --> colors
-
-&#x20;   login --> config
-
-&#x20;   login --> auth
-
-&#x20;   board --> colors
-
-&#x20;   board --> config
-
-&#x20;   board --> api
-
-&#x20;   board --> column
-
-&#x20;   board --> detail
-
-&#x20;   column --> colors
-
-&#x20;   column --> card
-
-&#x20;   card --> colors
-
-&#x20;   card --> models
-
-&#x20;   detail --> colors
-
-&#x20;   detail --> models
-
-&#x20;   api --> models
-
+    main --> app
+    app --> config
+    app --> login
+    app --> board
+    login --> colors
+    login --> config
+    login --> auth
+    board --> colors
+    board --> config
+    board --> api
+    board --> column
+    board --> detail
+    column --> colors
+    column --> card
+    card --> colors
+    card --> models
+    detail --> colors
+    detail --> models
+    api --> models
 ```
 
+---
 
-
-\---
-
-
-
-\## Authentication Flow
-
-
+## Authentication Flow
 
 ```mermaid
-
 sequenceDiagram
+    actor User
+    participant App
+    participant GitHub
 
-&#x20;   actor User
+    User->>App: click Login with GitHub
+    App->>App: choose scope public or private
+    App->>GitHub: POST /login/device/code
+    GitHub-->>App: device_code + user_code + verification_uri
+    App->>User: show user_code and open browser
+    User->>GitHub: visit verification_uri enter code and authorize
 
-&#x20;   participant App
+    loop poll every N seconds
+        App->>GitHub: POST /login/oauth/access_token
+        GitHub-->>App: authorization_pending or token
+    end
 
-&#x20;   participant GitHub
-
-
-
-&#x20;   User->>App: click Login with GitHub
-
-&#x20;   App->>App: choose scope public or private
-
-&#x20;   App->>GitHub: POST /login/device/code
-
-&#x20;   GitHub-->>App: device\_code + user\_code + verification\_uri
-
-&#x20;   App->>User: show user\_code and open browser
-
-&#x20;   User->>GitHub: visit verification\_uri enter code and authorize
-
-
-
-&#x20;   loop poll every N seconds
-
-&#x20;       App->>GitHub: POST /login/oauth/access\_token
-
-&#x20;       GitHub-->>App: authorization\_pending or token
-
-&#x20;   end
-
-
-
-&#x20;   App->>App: save token to config.json
-
-&#x20;   App->>App: navigate to BoardScreen
-
+    App->>App: save token to config.json
+    App->>App: navigate to BoardScreen
 ```
 
+---
 
-
-\---
-
-
-
-\## Issue Fetching Flow
-
-
+## Issue Fetching Flow
 
 ```mermaid
-
 flowchart TD
-
-&#x20;   A\[BoardScreen.\_load] --> B\[Thread \_load\_user]
-
-&#x20;   A --> C\[Thread \_load\_issues]
-
-&#x20;   B --> D\[GET /user]
-
-&#x20;   D --> E\[show login in topbar]
-
-&#x20;   C --> F\[fetch\_todo\_issues]
-
-&#x20;   F --> G\[9 search queries]
-
-&#x20;   G --> G1\[label todo is open]
-
-&#x20;   G --> G2\[label wip is open]
-
-&#x20;   G --> G3\[TODO in title is open]
-
-&#x20;   G --> G4\[WIP in title is open]
-
-&#x20;   G --> G5\[FIXME in title is open]
-
-&#x20;   G --> G6\[TODO in title is closed]
-
-&#x20;   G --> G7\[WIP in title is closed]
-
-&#x20;   G1 \& G2 \& G3 \& G4 \& G5 \& G6 \& G7 --> H\[deduplicate by id]
-
-&#x20;   H --> I\[list of Issue objects]
-
-&#x20;   I --> J\[\_on\_loaded]
-
-&#x20;   J --> K\[\_render and classify into columns]
-
+    A[BoardScreen._load] --> B[Thread _load_user]
+    A --> C[Thread _load_issues]
+    B --> D[GET /user]
+    D --> E[show login in topbar]
+    C --> F[fetch_todo_issues]
+    F --> G[9 search queries]
+    G --> G1[label todo is open]
+    G --> G2[label wip is open]
+    G --> G3[TODO in title is open]
+    G --> G4[WIP in title is open]
+    G --> G5[FIXME in title is open]
+    G --> G6[TODO in title is closed]
+    G --> G7[WIP in title is closed]
+    G1 & G2 & G3 & G4 & G5 & G6 & G7 --> H[deduplicate by id]
+    H --> I[list of Issue objects]
+    I --> J[_on_loaded]
+    J --> K[_render and classify into columns]
 ```
 
+---
 
-
-\---
-
-
-
-\## Issue Classification Logic
-
-
+## Issue Classification Logic
 
 ```mermaid
-
 flowchart TD
-
-&#x20;   A\[Issue] --> B{state is closed?}
-
-&#x20;   B -- yes --> Done
-
-&#x20;   B -- no --> C{id in wip\_ids?}
-
-&#x20;   C -- yes --> InProgress\[In Progress]
-
-&#x20;   C -- no --> D{label is wip or doing or in progress?}
-
-&#x20;   D -- yes --> InProgress
-
-&#x20;   D -- no --> Open
-
+    A[Issue] --> B{state is closed?}
+    B -- yes --> Done
+    B -- no --> C{id in wip_ids?}
+    C -- yes --> InProgress[In Progress]
+    C -- no --> D{label is wip or doing or in progress?}
+    D -- yes --> InProgress
+    D -- no --> Open
 ```
 
+`wip_ids` is an in-memory set managed by the user clicking Mark In Progress in the DetailWindow. It resets on refresh.
 
+---
 
-`wip\_ids` is an in-memory set managed by the user clicking Mark In Progress in the DetailWindow. It resets on refresh.
-
-
-
-\---
-
-
-
-\## UI Component Hierarchy
-
-
+## UI Component Hierarchy
 
 ```mermaid
-
 graph TD
-
-&#x20;   App --> LoginScreen
-
-&#x20;   App --> BoardScreen
-
-&#x20;   LoginScreen --> ScopeSelector\[Scope selector radio buttons]
-
-&#x20;   LoginScreen --> WaitingView\[Waiting view user\_code display]
-
-&#x20;   BoardScreen --> TopBar\[Top bar filter refresh logout]
-
-&#x20;   BoardScreen --> ProgressBar
-
-&#x20;   BoardScreen --> KanbanBoard\[Kanban board 3 columns]
-
-&#x20;   KanbanBoard --> ColOpen\[KanbanColumn Open]
-
-&#x20;   KanbanBoard --> ColWIP\[KanbanColumn In Progress]
-
-&#x20;   KanbanBoard --> ColDone\[KanbanColumn Done]
-
-&#x20;   ColOpen \& ColWIP \& ColDone --> IssueCard
-
-&#x20;   IssueCard -- click --> DetailWindow
-
-&#x20;   DetailWindow --> OpenGitHub\[Open on GitHub]
-
-&#x20;   DetailWindow --> ToggleWIP\[Mark In Progress or Move to Open]
-
+    App --> LoginScreen
+    App --> BoardScreen
+    LoginScreen --> ScopeSelector[Scope selector radio buttons]
+    LoginScreen --> WaitingView[Waiting view user_code display]
+    BoardScreen --> TopBar[Top bar filter refresh logout]
+    BoardScreen --> ProgressBar
+    BoardScreen --> KanbanBoard[Kanban board 3 columns]
+    KanbanBoard --> ColOpen[KanbanColumn Open]
+    KanbanBoard --> ColWIP[KanbanColumn In Progress]
+    KanbanBoard --> ColDone[KanbanColumn Done]
+    ColOpen & ColWIP & ColDone --> IssueCard
+    IssueCard -- click --> DetailWindow
+    DetailWindow --> OpenGitHub[Open on GitHub]
+    DetailWindow --> ToggleWIP[Mark In Progress or Move to Open]
 ```
 
+---
 
-
-\---
-
-
-
-\## Data Flow
-
-
+## Data Flow
 
 ```mermaid
-
 flowchart LR
-
-&#x20;   GH\[GitHub API] -->|JSON| api\[github/api.py]
-
-&#x20;   api -->|Issue objects| board\[BoardScreen]
-
-&#x20;   board -->|classify| cols\[KanbanColumn x3]
-
-&#x20;   cols -->|render| cards\[IssueCard xN]
-
-&#x20;   cards -->|click| detail\[DetailWindow]
-
-&#x20;   detail -->|toggle wip| board
-
-&#x20;   board -->|re-render| cols
-
+    GH[GitHub API] -->|JSON| api[github/api.py]
+    api -->|Issue objects| board[BoardScreen]
+    board -->|classify| cols[KanbanColumn x3]
+    cols -->|render| cards[IssueCard xN]
+    cards -->|click| detail[DetailWindow]
+    detail -->|toggle wip| board
+    board -->|re-render| cols
 ```
 
+---
 
+## Config File
 
-\---
-
-
-
-\## Config File
-
-
-
-Stored at `\~/.issueboard/config.json`:
-
-
+Stored at `~/.issueboard/config.json`:
 
 ```json
-
 {
-
-&#x20; "token": "gho\_xxxxxxxxxxxxxxxxxxxx"
-
+  "token": "gho_xxxxxxxxxxxxxxxxxxxx"
 }
-
 ```
-
-
 
 The token is written after successful device flow authorization and read on startup to skip the login screen. Logout deletes the token key.
 
+---
 
-
-\---
-
-
-
-\## Build and Release
-
-
+## Build and Release
 
 ```mermaid
-
 flowchart LR
-
-&#x20;   src\[main.py + issueboard/] --> pyinstaller\[PyInstaller]
-
-&#x20;   pyinstaller --> exe\[issueboard.exe]
-
-&#x20;   exe --> release\[GitHub Release vX.Y.Z]
-
+    src[main.py + issueboard/] --> pyinstaller[PyInstaller]
+    pyinstaller --> exe[issueboard.exe]
+    exe --> release[GitHub Release vX.Y.Z]
 ```
-
-
 
 Build command:
 
-
-
 ```bash
-
 pyinstaller --onefile --noconsole --icon=assets/icon.ico --name=issueboard main.py
-
 ```
 
-
-
 Output is at `dist/issueboard.exe`.
-
