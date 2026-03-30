@@ -92,3 +92,7 @@ A UI é composta por:
 
 **Arquivos de configs são guardados em ``~/.issueboard/config.json``**
 
+--
+
+# Licença 
+[MIT](https://github.com/Gabriel-V-Maia/issueboard/blob/main/LICENSE)
