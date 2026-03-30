@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/platform-desktop-lightgrey">
   <img src="https://img.shields.io/badge/gui-customtkinter-informational">
   <img src="https://img.shields.io/badge/license-MIT-green">
-  <img src="https://img.shields.io/github/v/release/SEU-USUARIO/issueboard">
+  <img src="https://img.shields.io/github/v/release/Gabriel-V-Maia/issueboard">
 </p>
 
 
