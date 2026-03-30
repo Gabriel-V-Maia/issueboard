@@ -18,39 +18,39 @@ issueboard is a desktop kanban app built with Python and customtkinter that auth
 
 issueboard/
 
-├── main.py                  # entry point
+├── main.py
 
 ├── issueboard/
 
-│   ├── app.py               # App root window, screen routing
+│   ├── app.py
 
-│   ├── config.py            # load/save config (\~/.issueboard/config.json)
+│   ├── config.py
 
-│   ├── models.py            # Issue dataclass
+│   ├── models.py
 
 │   ├── github/
 
-│   │   ├── auth.py          # device flow OAuth
+│   │   ├── auth.py
 
-│   │   └── api.py           # GitHub REST API calls
+│   │   └── api.py
 
 │   └── ui/
 
-│       ├── colors.py        # COLORS dict, label\_color(), btn() helper
+│       ├── colors.py
 
-│       ├── login.py         # LoginScreen
+│       ├── login.py
 
-│       ├── board.py         # BoardScreen
+│       ├── board.py
 
-│       ├── column.py        # KanbanColumn
+│       ├── column.py
 
-│       ├── card.py          # IssueCard
+│       ├── card.py
 
-│       └── detail.py        # DetailWindow
+│       └── detail.py
 
-├── assets/
+└── assets/
 
-&#x20;    └── icon.ico
+&#x20;   └── icon.ico
 
 ```
 
@@ -68,55 +68,41 @@ issueboard/
 
 graph TD
 
-&#x20;   main\["main.py"] --> app\["app.py"]
+&#x20;   main --> app
 
+&#x20;   app --> config
 
+&#x20;   app --> login
 
-&#x20;   app --> config\["config.py"]
+&#x20;   app --> board
 
-&#x20;   app --> login\["ui/login.py"]
-
-&#x20;   app --> board\["ui/board.py"]
-
-
-
-&#x20;   login --> colors\["ui/colors.py"]
+&#x20;   login --> colors
 
 &#x20;   login --> config
 
-&#x20;   login --> auth\["github/auth.py"]
-
-
+&#x20;   login --> auth
 
 &#x20;   board --> colors
 
 &#x20;   board --> config
 
-&#x20;   board --> api\["github/api.py"]
+&#x20;   board --> api
 
-&#x20;   board --> column\["ui/column.py"]
+&#x20;   board --> column
 
-&#x20;   board --> detail\["ui/detail.py"]
-
-
+&#x20;   board --> detail
 
 &#x20;   column --> colors
 
-&#x20;   column --> card\["ui/card.py"]
-
-
+&#x20;   column --> card
 
 &#x20;   card --> colors
 
-&#x20;   card --> models\["models.py"]
-
-
+&#x20;   card --> models
 
 &#x20;   detail --> colors
 
 &#x20;   detail --> models
-
-
 
 &#x20;   api --> models
 
@@ -128,7 +114,7 @@ graph TD
 
 
 
-\## Authentication Flow (Device Flow OAuth)
+\## Authentication Flow
 
 
 
@@ -144,19 +130,17 @@ sequenceDiagram
 
 
 
-&#x20;   User->>App: click "Login with GitHub"
+&#x20;   User->>App: click Login with GitHub
 
-&#x20;   App->>App: choose scope (public / private)
+&#x20;   App->>App: choose scope public or private
 
 &#x20;   App->>GitHub: POST /login/device/code
 
 &#x20;   GitHub-->>App: device\_code + user\_code + verification\_uri
 
+&#x20;   App->>User: show user\_code and open browser
 
-
-&#x20;   App->>User: show user\_code + open browser
-
-&#x20;   User->>GitHub: visit verification\_uri, enter code, authorize
+&#x20;   User->>GitHub: visit verification\_uri enter code and authorize
 
 
 
@@ -164,13 +148,13 @@ sequenceDiagram
 
 &#x20;       App->>GitHub: POST /login/oauth/access\_token
 
-&#x20;       GitHub-->>App: authorization\_pending / token
+&#x20;       GitHub-->>App: authorization\_pending or token
 
 &#x20;   end
 
 
 
-&#x20;   App->>App: save token to \~/.issueboard/config.json
+&#x20;   App->>App: save token to config.json
 
 &#x20;   App->>App: navigate to BoardScreen
 
@@ -190,39 +174,31 @@ sequenceDiagram
 
 flowchart TD
 
-&#x20;   A\[BoardScreen.\_load] --> B\[Thread: \_load\_user]
+&#x20;   A\[BoardScreen.\_load] --> B\[Thread \_load\_user]
 
-&#x20;   A --> C\[Thread: \_load\_issues]
-
-
+&#x20;   A --> C\[Thread \_load\_issues]
 
 &#x20;   B --> D\[GET /user]
 
-&#x20;   D --> E\[show @login in topbar]
-
-
+&#x20;   D --> E\[show login in topbar]
 
 &#x20;   C --> F\[fetch\_todo\_issues]
 
-&#x20;   F --> G{9 search queries}
+&#x20;   F --> G\[9 search queries]
 
+&#x20;   G --> G1\[label todo is open]
 
+&#x20;   G --> G2\[label wip is open]
 
-&#x20;   G --> G1\["label:todo is:open"]
+&#x20;   G --> G3\[TODO in title is open]
 
-&#x20;   G --> G2\["label:wip is:open"]
+&#x20;   G --> G4\[WIP in title is open]
 
-&#x20;   G --> G3\["TODO in:title is:open"]
+&#x20;   G --> G5\[FIXME in title is open]
 
-&#x20;   G --> G4\["WIP in:title is:open"]
+&#x20;   G --> G6\[TODO in title is closed]
 
-&#x20;   G --> G5\["FIXME in:title is:open"]
-
-&#x20;   G --> G6\["TODO in:title is:closed"]
-
-&#x20;   G --> G7\["... etc"]
-
-
+&#x20;   G --> G7\[WIP in title is closed]
 
 &#x20;   G1 \& G2 \& G3 \& G4 \& G5 \& G6 \& G7 --> H\[deduplicate by id]
 
@@ -230,7 +206,7 @@ flowchart TD
 
 &#x20;   I --> J\[\_on\_loaded]
 
-&#x20;   J --> K\[\_render → classify into columns]
+&#x20;   J --> K\[\_render and classify into columns]
 
 ```
 
@@ -248,15 +224,15 @@ flowchart TD
 
 flowchart TD
 
-&#x20;   A\[Issue] --> B{state == closed?}
+&#x20;   A\[Issue] --> B{state is closed?}
 
 &#x20;   B -- yes --> Done
 
 &#x20;   B -- no --> C{id in wip\_ids?}
 
-&#x20;   C -- yes --> InProgress\["In Progress"]
+&#x20;   C -- yes --> InProgress\[In Progress]
 
-&#x20;   C -- no --> D{label in wip/doing/in progress?}
+&#x20;   C -- no --> D{label is wip or doing or in progress?}
 
 &#x20;   D -- yes --> InProgress
 
@@ -266,7 +242,7 @@ flowchart TD
 
 
 
-`wip\_ids` is an in-memory set managed by the user clicking "Mark In Progress" in the `DetailWindow`. It resets on refresh.
+`wip\_ids` is an in-memory set managed by the user clicking Mark In Progress in the DetailWindow. It resets on refresh.
 
 
 
@@ -282,45 +258,33 @@ flowchart TD
 
 graph TD
 
-&#x20;   App\["App (CTk root)"]
-
 &#x20;   App --> LoginScreen
 
 &#x20;   App --> BoardScreen
 
+&#x20;   LoginScreen --> ScopeSelector\[Scope selector radio buttons]
 
+&#x20;   LoginScreen --> WaitingView\[Waiting view user\_code display]
 
-&#x20;   LoginScreen --> ScopeSelector\["Scope selector\\n(radio buttons)"]
-
-&#x20;   LoginScreen --> WaitingView\["Waiting view\\n(user\_code display)"]
-
-
-
-&#x20;   BoardScreen --> TopBar\["Top bar\\n(filter, refresh, logout)"]
+&#x20;   BoardScreen --> TopBar\[Top bar filter refresh logout]
 
 &#x20;   BoardScreen --> ProgressBar
 
-&#x20;   BoardScreen --> KanbanBoard\["Kanban board (3 columns)"]
+&#x20;   BoardScreen --> KanbanBoard\[Kanban board 3 columns]
 
+&#x20;   KanbanBoard --> ColOpen\[KanbanColumn Open]
 
+&#x20;   KanbanBoard --> ColWIP\[KanbanColumn In Progress]
 
-&#x20;   KanbanBoard --> Open\["KanbanColumn: Open"]
+&#x20;   KanbanBoard --> ColDone\[KanbanColumn Done]
 
-&#x20;   KanbanBoard --> InProgress\["KanbanColumn: In Progress"]
-
-&#x20;   KanbanBoard --> Done\["KanbanColumn: Done"]
-
-
-
-&#x20;   Open \& InProgress \& Done --> IssueCard
+&#x20;   ColOpen \& ColWIP \& ColDone --> IssueCard
 
 &#x20;   IssueCard -- click --> DetailWindow
 
+&#x20;   DetailWindow --> OpenGitHub\[Open on GitHub]
 
-
-&#x20;   DetailWindow --> OpenGitHub\["Open on GitHub ↗"]
-
-&#x20;   DetailWindow --> ToggleWIP\["Mark In Progress / Move to Open"]
+&#x20;   DetailWindow --> ToggleWIP\[Mark In Progress or Move to Open]
 
 ```
 
@@ -338,15 +302,15 @@ graph TD
 
 flowchart LR
 
-&#x20;   GH\["GitHub API"] -->|JSON| api\["github/api.py"]
+&#x20;   GH\[GitHub API] -->|JSON| api\[github/api.py]
 
-&#x20;   api -->|Issue objects| board\["BoardScreen"]
+&#x20;   api -->|Issue objects| board\[BoardScreen]
 
-&#x20;   board -->|classify| cols\["KanbanColumn × 3"]
+&#x20;   board -->|classify| cols\[KanbanColumn x3]
 
-&#x20;   cols -->|render| cards\["IssueCard × N"]
+&#x20;   cols -->|render| cards\[IssueCard xN]
 
-&#x20;   cards -->|click| detail\["DetailWindow"]
+&#x20;   cards -->|click| detail\[DetailWindow]
 
 &#x20;   detail -->|toggle wip| board
 
@@ -380,7 +344,7 @@ Stored at `\~/.issueboard/config.json`:
 
 
 
-The token is written after successful device flow authorization and read on app startup to skip the login screen on subsequent launches. Logout deletes the token key.
+The token is written after successful device flow authorization and read on startup to skip the login screen. Logout deletes the token key.
 
 
 
@@ -388,7 +352,7 @@ The token is written after successful device flow authorization and read on app 
 
 
 
-\## Build \& Release
+\## Build and Release
 
 
 
@@ -396,25 +360,11 @@ The token is written after successful device flow authorization and read on app 
 
 flowchart LR
 
-&#x20;   src\["Source\\n(main.py + issueboard/)"]
+&#x20;   src\[main.py + issueboard/] --> pyinstaller\[PyInstaller]
 
-&#x20;   spec\["issueboard.spec"]
+&#x20;   pyinstaller --> exe\[issueboard.exe]
 
-&#x20;   pyinstaller\["PyInstaller"]
-
-&#x20;   exe\["issueboard.exe\\n(single binary)"]
-
-&#x20;   release\["GitHub Release\\n(tag vX.Y.Z)"]
-
-
-
-&#x20;   src --> pyinstaller
-
-&#x20;   spec --> pyinstaller
-
-&#x20;   pyinstaller --> exe
-
-&#x20;   exe --> release
+&#x20;   exe --> release\[GitHub Release vX.Y.Z]
 
 ```
 
@@ -432,5 +382,5 @@ pyinstaller --onefile --noconsole --icon=assets/icon.ico --name=issueboard main.
 
 
 
-Output is at `dist/issueboard.exe`. The spec is configured with `console=False` (no terminal window) and bundles the icon from `assets/icon.ico`.
+Output is at `dist/issueboard.exe`.
 
