@@ -88,7 +88,7 @@ A UI é composta por:
 5. Interações do usuário atualizam o estado local
 
 ---
-## Configus
+## Configs
 
 **Arquivos de configs são guardados em ``~/.issueboard/config.json``**
 
