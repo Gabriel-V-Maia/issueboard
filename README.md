@@ -1,5 +1,15 @@
 # issueboard
 
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.11+-blue">
+  <img src="https://img.shields.io/badge/status-active-success">
+  <img src="https://img.shields.io/badge/platform-desktop-lightgrey">
+  <img src="https://img.shields.io/badge/gui-customtkinter-informational">
+  <img src="https://img.shields.io/badge/license-MIT-green">
+  <img src="https://img.shields.io/github/v/release/SEU-USUARIO/issueboard">
+</p>
+
+
 Kanban desktop para acompanhar TODOs e WIPs distribuídos entre repositórios no GitHub.
 
 O issueboard é uma aplicação desktop construída em Python com customtkinter que autentica via GitHub (Device Flow OAuth) e organiza issues em um board Kanban de três colunas.
