@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import Optional
 
 
@@ -14,3 +14,10 @@ class Issue:
     assignee:   Optional[str] = None
     created_at: str = ""
     body:       str = ""
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    @staticmethod
+    def from_dict(d: dict) -> "Issue":
+        return Issue(**d)
