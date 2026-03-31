@@ -2,7 +2,7 @@ import threading
 import webbrowser
 import customtkinter as ctk
 from issueboard.config import load_config, save_config
-from issueboard.ui.colors import COLORS, btn
+from issueboard.ui.colors import COLORS, FONT, FONT_SIZE, SP, btn
 from issueboard.github.auth import (
     device_flow_start, device_flow_poll,
     SCOPES_PUBLIC, SCOPES_PRIVATE,
@@ -33,73 +33,77 @@ class LoginScreen(ctk.CTkFrame):
         self._clear()
         self._stop_poll.set()
         self._scope_var = ctk.StringVar(value="public")
-        box = self._box(500)
+        box = self._box(580)
 
         ctk.CTkLabel(box, text="⬡",
-                     font=ctk.CTkFont("Courier New", 48),
-                     text_color=COLORS["accent"]).pack(pady=(28, 0))
+                     font=ctk.CTkFont(FONT, FONT_SIZE["icon"]),
+                     text_color=COLORS["accent"]).pack(pady=(SP[7], 0))
 
         ctk.CTkLabel(box, text="issueboard",
-                     font=ctk.CTkFont("Courier New", 26, weight="bold"),
-                     text_color=COLORS["text"]).pack(pady=(4, 2))
+                     font=ctk.CTkFont(FONT, FONT_SIZE["2xl"], weight="bold"),
+                     text_color=COLORS["text"]).pack(pady=(SP[1], 0))
 
-        ctk.CTkLabel(box, text="your github TODOs, organized",
-                     font=ctk.CTkFont("Courier New", 12),
-                     text_color=COLORS["text_muted"]).pack(pady=(0, 16))
+              ctk.CTkLabel(box, text="your github TODOs, organized",
+                     font=ctk.CTkFont(FONT, FONT_SIZE["sm"]),
+                     text_color=COLORS["text_muted"]).pack(pady=(SP[2], SP[5]))
 
-        ctk.CTkFrame(box, height=1, fg_color=COLORS["border"]).pack(fill="x", padx=40, pady=(0, 16))
+        ctk.CTkFrame(box, height=1, fg_color=COLORS["border"]).pack(fill="x", padx=SP[8])
 
         ctk.CTkLabel(box, text="repository access",
-                     font=ctk.CTkFont("Courier New", 11, weight="bold"),
-                     text_color=COLORS["text_muted"]).pack(anchor="w", padx=40, pady=(0, 8))
+                     font=ctk.CTkFont(FONT, FONT_SIZE["xs"], weight="bold"),
+                     text_color=COLORS["text_muted"]).pack(
+                         anchor="w", padx=SP[8], pady=(SP[4], SP[2]))
 
+        # Opção pública --!
         opt_public = ctk.CTkFrame(box, fg_color=COLORS["surface2"], corner_radius=8)
-        opt_public.pack(fill="x", padx=40, pady=(0, 6))
+        opt_public.pack(fill="x", padx=SP[8], pady=(0, SP[2]))
         ctk.CTkRadioButton(
             opt_public, text="",
             variable=self._scope_var, value="public",
             fg_color=COLORS["accent"], border_color=COLORS["border"],
             command=self._update_warn,
-        ).pack(side="left", padx=(12, 6), pady=12)
+        ).pack(side="left", padx=(SP[3], SP[2]), pady=SP[3])
         tf = ctk.CTkFrame(opt_public, fg_color="transparent")
-        tf.pack(side="left", pady=10)
+        tf.pack(side="left", pady=SP[2])
         ctk.CTkLabel(tf, text="Public repos only",
-                     font=ctk.CTkFont("Courier New", 12, weight="bold"),
+                     font=ctk.CTkFont(FONT, FONT_SIZE["sm"], weight="bold"),
                      text_color=COLORS["text"]).pack(anchor="w")
         ctk.CTkLabel(tf, text="read:user  public_repo",
-                     font=ctk.CTkFont("Courier New", 10),
-                     text_color=COLORS["accent2"]).pack(anchor="w")
+                     font=ctk.CTkFont(FONT, FONT_SIZE["xs"]),
+                     text_color=COLORS["accent2"]).pack(anchor="w", pady=(SP[1], 0))
 
+        # Opção privada --!
         opt_all = ctk.CTkFrame(box, fg_color=COLORS["surface2"], corner_radius=8)
-        opt_all.pack(fill="x", padx=40, pady=(0, 6))
+        opt_all.pack(fill="x", padx=SP[8], pady=(0, SP[2]))
         ctk.CTkRadioButton(
             opt_all, text="",
             variable=self._scope_var, value="private",
             fg_color=COLORS["accent"], border_color=COLORS["border"],
             command=self._update_warn,
-        ).pack(side="left", padx=(12, 6), pady=12)
+        ).pack(side="left", padx=(SP[3], SP[2]), pady=SP[3])
         tf2 = ctk.CTkFrame(opt_all, fg_color="transparent")
-        tf2.pack(side="left", pady=10)
+        tf2.pack(side="left", pady=SP[2])
         ctk.CTkLabel(tf2, text="Public + private repos",
-                     font=ctk.CTkFont("Courier New", 12, weight="bold"),
+                     font=ctk.CTkFont(FONT, FONT_SIZE["sm"], weight="bold"),
                      text_color=COLORS["text"]).pack(anchor="w")
         ctk.CTkLabel(tf2, text="read:user  repo  (full repo access)",
-                     font=ctk.CTkFont("Courier New", 10),
-                     text_color=COLORS["warn"]).pack(anchor="w")
+                     font=ctk.CTkFont(FONT, FONT_SIZE["xs"]),
+                     text_color=COLORS["warn"]).pack(anchor="w", pady=(SP[1], 0))
 
         self._warn_lbl = ctk.CTkLabel(box, text="",
-                                      font=ctk.CTkFont("Courier New", 10),
+                                      font=ctk.CTkFont(FONT, FONT_SIZE["xs"]),
                                       text_color=COLORS["warn"],
                                       wraplength=380, justify="left")
-        self._warn_lbl.pack(padx=40, pady=(4, 0), anchor="w")
+        self._warn_lbl.pack(padx=SP[8], pady=(SP[2], 0), anchor="w")
 
         self._err = ctk.CTkLabel(box, text="",
-                                 font=ctk.CTkFont("Courier New", 11),
+                                 font=ctk.CTkFont(FONT, FONT_SIZE["sm"]),
                                  text_color=COLORS["accent3"])
-        self._err.pack(pady=(4, 0))
+        self._err.pack(pady=(SP[2], 0))
 
-        btn(box, "Login with GitHub →", self._start,
-            primary=True, height=46, font_size=13).pack(fill="x", padx=40, pady=(10, 24))
+        btn(box, "Login with GitHub", self._start,
+            primary=True, height=46, font_size=FONT_SIZE["md"]).pack(
+                fill="x", padx=SP[8], pady=(SP[3], SP[6]))
 
     def _update_warn(self):
         if self._scope_var.get() == "private":
@@ -114,42 +118,44 @@ class LoginScreen(ctk.CTkFrame):
         box = self._box(460)
 
         ctk.CTkLabel(box, text="⬡ issueboard",
-                     font=ctk.CTkFont("Courier New", 18, weight="bold"),
-                     text_color=COLORS["accent"]).pack(pady=(28, 16))
+                     font=ctk.CTkFont(FONT, FONT_SIZE["lg"], weight="bold"),
+                     text_color=COLORS["accent"]).pack(pady=(SP[7], SP[4]))
 
         ctk.CTkLabel(box, text="1. Open this URL in your browser",
-                     font=ctk.CTkFont("Courier New", 11),
+                     font=ctk.CTkFont(FONT, FONT_SIZE["sm"]),
                      text_color=COLORS["text_muted"]).pack()
 
         uf = ctk.CTkFrame(box, fg_color=COLORS["surface2"], corner_radius=8)
-        uf.pack(fill="x", padx=40, pady=(6, 18))
+        uf.pack(fill="x", padx=SP[8], pady=(SP[2], SP[5]))
         ctk.CTkLabel(uf, text=verification_uri,
-                     font=ctk.CTkFont("Courier New", 13, weight="bold"),
-                     text_color=COLORS["accent"]).pack(pady=10)
+                     font=ctk.CTkFont(FONT, FONT_SIZE["md"], weight="bold"),
+                     text_color=COLORS["accent"]).pack(pady=SP[3])
 
         ctk.CTkLabel(box, text="2. Enter this code",
-                     font=ctk.CTkFont("Courier New", 11),
+                     font=ctk.CTkFont(FONT, FONT_SIZE["sm"]),
                      text_color=COLORS["text_muted"]).pack()
 
+      
         cf = ctk.CTkFrame(box, fg_color=COLORS["tag_bg"], corner_radius=10)
-        cf.pack(padx=40, pady=(8, 18))
+        cf.pack(padx=SP[8], pady=(SP[2], SP[5]))
         ctk.CTkLabel(cf, text=user_code,
-                     font=ctk.CTkFont("Courier New", 34, weight="bold"),
-                     text_color=COLORS["text"]).pack(padx=36, pady=14)
+                     font=ctk.CTkFont(FONT, FONT_SIZE["2xl"] + 4, weight="bold"),
+                     text_color=COLORS["text"]).pack(padx=SP[8], pady=SP[4])
 
         self._wait_lbl = ctk.CTkLabel(box, text="Waiting for authorization…",
-                                      font=ctk.CTkFont("Courier New", 11),
+                                      font=ctk.CTkFont(FONT, FONT_SIZE["sm"]),
                                       text_color=COLORS["text_muted"])
-        self._wait_lbl.pack(pady=(0, 10))
+        self._wait_lbl.pack(pady=(0, SP[3]))
         self._dots = 0
         self._tick()
 
         btn(box, "Open GitHub →",
             lambda: webbrowser.open(verification_uri),
-            primary=True, height=38).pack(fill="x", padx=40, pady=(0, 6))
+            primary=True, height=38).pack(fill="x", padx=SP[8], pady=(0, SP[2]))
 
         btn(box, "Cancel", self._build_idle,
-            height=34, font_size=11).pack(fill="x", padx=40, pady=(0, 20))
+            height=34, font_size=FONT_SIZE["sm"]).pack(
+                fill="x", padx=SP[8], pady=(0, SP[5]))
 
     def _tick(self):
         if not self.winfo_exists():
