@@ -24,6 +24,7 @@ O issueboard é uma aplicação desktop construída em Python com customtkinter 
 ## Features
 
 - Autenticação com GitHub via Device Flow OAuth
+- Cache de Issues já coletados (5m)
 - Board Kanban com colunas: Open, In Progress, Done
 - Agregação de issues de múltiplos repositórios
 - Busca por padrões comuns: TODO, WIP, FIXME e labels
