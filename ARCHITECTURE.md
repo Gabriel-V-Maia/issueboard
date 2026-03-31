@@ -5,7 +5,6 @@ issueboard is a desktop kanban app built with Python and customtkinter that auth
 ---
 
 ## Package Structure
-
 ```
 issueboard/
 ├── main.py
@@ -30,7 +29,6 @@ issueboard/
 ---
 
 ## Module Dependency Graph
-
 ```mermaid
 graph TD
     main --> app
@@ -57,7 +55,6 @@ graph TD
 ---
 
 ## Authentication Flow
-
 ```mermaid
 sequenceDiagram
     actor User
@@ -84,31 +81,38 @@ sequenceDiagram
 
 ## Issue Fetching Flow
 
+Cache uses a stale-while-revalidate strategy with a 5-minute TTL stored at `~/.issueboard/cache.json`.
 ```mermaid
 flowchart TD
-    A[BoardScreen._load] --> B[Thread _load_user]
-    A --> C[Thread _load_issues]
-    B --> D[GET /user]
-    D --> E[show login in topbar]
-    C --> F[fetch_todo_issues]
-    F --> G[9 search queries]
-    G --> G1[label todo is open]
-    G --> G2[label wip is open]
-    G --> G3[TODO in title is open]
-    G --> G4[WIP in title is open]
-    G --> G5[FIXME in title is open]
-    G --> G6[TODO in title is closed]
-    G --> G7[WIP in title is closed]
-    G1 & G2 & G3 & G4 & G5 & G6 & G7 --> H[deduplicate by id]
-    H --> I[list of Issue objects]
-    I --> J[_on_loaded]
-    J --> K[_render and classify into columns]
+    A[BoardScreen._load] --> B{cache exists?}
+    B -- no --> C[show progress bar]
+    C --> D[Thread _load_user]
+    C --> E[Thread _load_issues]
+    B -- yes --> F{cache fresh?\nage < 5 min}
+    F -- yes --> G[render from cache instantly]
+    G --> Z[done]
+    F -- no --> H[render from cache instantly]
+    H --> I[Thread _load_user]
+    H --> J[Thread _load_issues background]
+    E & J --> K[fetch_todo_issues]
+    K --> L[7 parallel search queries\nThreadPoolExecutor max_workers=4]
+    L --> L1[label:todo is:open]
+    L --> L2[label:wip is:open]
+    L --> L3[TODO in:title is:open]
+    L --> L4[WIP in:title is:open]
+    L --> L5[FIXME in:title is:open]
+    L --> L6[TODO in:title is:closed]
+    L --> L7[WIP in:title is:closed]
+    L1 & L2 & L3 & L4 & L5 & L6 & L7 --> M[deduplicate by id]
+    M --> N[list of Issue objects]
+    N --> O[save_cache to disk]
+    O --> P[_on_loaded]
+    P --> Q[_render and classify into columns]
 ```
 
 ---
 
 ## Issue Classification Logic
-
 ```mermaid
 flowchart TD
     A[Issue] --> B{state is closed?}
@@ -125,7 +129,6 @@ flowchart TD
 ---
 
 ## UI Component Hierarchy
-
 ```mermaid
 graph TD
     App --> LoginScreen
@@ -147,11 +150,12 @@ graph TD
 ---
 
 ## Data Flow
-
 ```mermaid
 flowchart LR
     GH[GitHub API] -->|JSON| api[github/api.py]
     api -->|Issue objects| board[BoardScreen]
+    board -->|save| cache[(cache.json)]
+    cache -->|instant render| board
     board -->|classify| cols[KanbanColumn x3]
     cols -->|render| cards[IssueCard xN]
     cards -->|click| detail[DetailWindow]
@@ -161,22 +165,41 @@ flowchart LR
 
 ---
 
-## Config File
+## Config Files
 
-Stored at `~/.issueboard/config.json`:
+Both stored at `~/.issueboard/`:
 
+**`config.json`** — authentication token, written after device flow and read on startup to skip login. Logout deletes the token key.
 ```json
 {
   "token": "gho_xxxxxxxxxxxxxxxxxxxx"
 }
 ```
 
-The token is written after successful device flow authorization and read on startup to skip the login screen. Logout deletes the token key.
+**`cache.json`** — serialized issue list with timestamp. Written after every successful fetch. Read on startup for instant rendering before the API responds.
+```json
+{
+  "ts": 1743000000.0,
+  "issues": [
+    {
+      "id": 123456,
+      "title": "TODO: fix thing",
+      "url": "https://github.com/...",
+      "state": "open",
+      "labels": ["todo"],
+      "repo": "owner/repo",
+      "number": 42,
+      "assignee": null,
+      "created_at": "2025-01-01",
+      "body": "..."
+    }
+  ]
+}
+```
 
 ---
 
 ## Build and Release
-
 ```mermaid
 flowchart LR
     src[main.py + issueboard/] --> pyinstaller[PyInstaller]
@@ -185,7 +208,6 @@ flowchart LR
 ```
 
 Build command:
-
 ```bash
 pyinstaller --onefile --noconsole --icon=assets/icon.ico --name=issueboard main.py
 ```
