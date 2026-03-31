@@ -1,4 +1,9 @@
-# issueboard
+<p align="center">
+  <img src="assets/icon_png.png" width="212" />
+</p>
+
+
+
 
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.11+-blue">
