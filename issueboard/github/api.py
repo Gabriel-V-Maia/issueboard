@@ -1,7 +1,9 @@
 import time
 import requests
-from issueboard.models import Issue
+import threading
 
+from issueboard.models import Issue
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def get_user(token: str) -> dict:
     r = requests.get(
@@ -13,36 +15,42 @@ def get_user(token: str) -> dict:
     return r.json()
 
 
-def fetch_todo_issues(token: str, progress_cb=None) -> list:
+def fetch_todo_issues(token: str, progress_cb=None) -> list[Issue]:
     headers = {"Authorization": f"Bearer {token}",
                "Accept": "application/vnd.github+json"}
     issues = []
     seen   = set()
+    lock   = threading.Lock()
 
-    searches = [
-        "is:issue label:todo  involves:@me is:open",
-        "is:issue label:TODO  involves:@me is:open",
-        "is:issue label:wip   involves:@me is:open",
-        "is:issue label:WIP   involves:@me is:open",
-        "is:issue TODO  in:title involves:@me is:open",
-        "is:issue WIP   in:title involves:@me is:open",
-        "is:issue FIXME in:title involves:@me is:open",
-        "is:issue TODO  in:title involves:@me is:closed",
-        "is:issue WIP   in:title involves:@me is:closed",
-    ]
-
-    for q in searches:
+    def do_search(q):
         url = f"https://api.github.com/search/issues?q={requests.utils.quote(q)}&per_page=50"
         try:
             r = requests.get(url, headers=headers, timeout=15)
             if r.status_code == 200:
-                for item in r.json().get("items", []):
-                    _add_issue(item, issues, seen)
+                return r.json().get("items", [])
         except Exception:
             pass
-        if progress_cb:
-            progress_cb()
-        time.sleep(0.35)
+        return []
+
+    searches = [
+        "is:issue involves:@me is:open   label:todo",
+        "is:issue involves:@me is:open   label:wip",
+        'is:issue involves:@me is:open   in:title TODO',
+        'is:issue involves:@me is:open   in:title WIP',
+        'is:issue involves:@me is:open   in:title FIXME',
+        'is:issue involves:@me is:closed in:title TODO',
+        'is:issue involves:@me is:closed in:title WIP',
+    ]
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        futures = {pool.submit(do_search, q): q for q in searches}
+        for future in as_completed(futures):
+            items = future.result()
+            with lock:
+                for item in items:
+                    _add_issue(item, issues, seen)
+            if progress_cb:
+                progress_cb()
 
     return issues
 
