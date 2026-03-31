@@ -1,6 +1,6 @@
 import customtkinter as ctk
 from issueboard.models import Issue
-from issueboard.ui.colors import COLORS
+from issueboard.ui.colors import COLORS, FONT, FONT_SIZE, SP
 from issueboard.ui.card import IssueCard
 
 COLUMNS = ["Open", "In Progress", "Done"]
@@ -23,16 +23,18 @@ class KanbanColumn(ctk.CTkFrame):
         self._cards = []
 
         hdr = ctk.CTkFrame(self, fg_color="transparent")
-        hdr.pack(fill="x", padx=12, pady=(12, 6))
+        hdr.pack(fill="x", padx=SP[3], pady=(SP[3], SP[2]))
 
-        ctk.CTkLabel(hdr, text="●", font=ctk.CTkFont(size=10),
+        ctk.CTkLabel(hdr, text="●",
+                     font=ctk.CTkFont(FONT, FONT_SIZE["xs"]),
                      text_color=_DOT_COLOR[title]).pack(side="left")
+
         ctk.CTkLabel(hdr, text=title.upper(),
-                     font=ctk.CTkFont("Courier New", 11, weight="bold"),
-                     text_color=COLORS["text"]).pack(side="left", padx=6)
+                     font=ctk.CTkFont(FONT, FONT_SIZE["xs"], weight="bold"),
+                     text_color=COLORS["text"]).pack(side="left", padx=SP[2])
 
         self._count = ctk.CTkLabel(hdr, text="0",
-                                   font=ctk.CTkFont("Courier New", 10),
+                                   font=ctk.CTkFont(FONT, FONT_SIZE["xs"]),
                                    text_color=COLORS["text_muted"])
         self._count.pack(side="right")
 
@@ -40,7 +42,7 @@ class KanbanColumn(ctk.CTkFrame):
             self, fg_color="transparent",
             scrollbar_button_color=COLORS["border"],
         )
-        self._scroll.pack(fill="both", expand=True, padx=8, pady=(0, 8))
+        self._scroll.pack(fill="both", expand=True, padx=SP[2], pady=(0, SP[2]))
         self._on_open = on_open
 
     def clear(self):
@@ -51,6 +53,6 @@ class KanbanColumn(ctk.CTkFrame):
 
     def add(self, issue: Issue):
         card = IssueCard(self._scroll, issue, self._on_open)
-        card.pack(fill="x", pady=(0, 6))
+        card.pack(fill="x", pady=(0, SP[2]))
         self._cards.append(card)
         self._count.configure(text=str(len(self._cards)))
