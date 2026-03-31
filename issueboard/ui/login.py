@@ -43,7 +43,7 @@ class LoginScreen(ctk.CTkFrame):
                      font=ctk.CTkFont(FONT, FONT_SIZE["2xl"], weight="bold"),
                      text_color=COLORS["text"]).pack(pady=(SP[1], 0))
 
-              ctk.CTkLabel(box, text="your github TODOs, organized",
+        ctk.CTkLabel(box, text="your github TODOs, organized",
                      font=ctk.CTkFont(FONT, FONT_SIZE["sm"]),
                      text_color=COLORS["text_muted"]).pack(pady=(SP[2], SP[5]))
 
