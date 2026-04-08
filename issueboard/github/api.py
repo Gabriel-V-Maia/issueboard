@@ -5,6 +5,7 @@ import threading
 from issueboard.models import Issue
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+
 def get_user(token: str) -> dict:
     r = requests.get(
         "https://api.github.com/user",
@@ -53,6 +54,21 @@ def fetch_todo_issues(token: str, progress_cb=None) -> list[Issue]:
                 progress_cb()
 
     return issues
+
+
+def set_issue_state(token: str, repo: str, number: int, state: str) -> bool:
+    url = f"https://api.github.com/repos/{repo}/issues/{number}"
+    try:
+        r = requests.patch(
+            url,
+            json={"state": state},
+            headers={"Authorization": f"Bearer {token}",
+                     "Accept": "application/vnd.github+json"},
+            timeout=15,
+        )
+        return r.status_code == 200
+    except Exception:
+        return False
 
 
 def _add_issue(item: dict, issues: list, seen: set):
