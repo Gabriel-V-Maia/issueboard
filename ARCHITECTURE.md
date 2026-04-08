@@ -115,7 +115,7 @@ flowchart TD
 ## Issue Classification Logic
 ```mermaid
 flowchart TD
-    A[Issue] --> B{state is closed?}
+    A[Issue] --> B{id in closed_ids\nor state closed?}
     B -- yes --> Done
     B -- no --> C{id in wip_ids?}
     C -- yes --> InProgress[In Progress]
@@ -124,7 +124,54 @@ flowchart TD
     D -- no --> Open
 ```
 
-`wip_ids` is an in-memory set managed by the user clicking Mark In Progress in the DetailWindow. It resets on refresh.
+`wip_ids` and `closed_ids` are persisted to `~/.issueboard/state.json` and loaded on startup. They survive restarts and refreshes.
+
+---
+
+## Drag-and-Drop Flow
+```mermaid
+sequenceDiagram
+    actor User
+    participant Card
+    participant BoardScreen
+    participant KanbanColumn
+    participant GitHubAPI
+
+    User->>Card: press + drag (>6px threshold)
+    Card->>BoardScreen: on_drag_start(issue, event)
+    BoardScreen->>KanbanColumn: set_drop_highlight(true) on hovered column
+    User->>BoardScreen: release mouse
+    BoardScreen->>BoardScreen: _move_issue_to_column(issue, target)
+    BoardScreen->>BoardScreen: update wip_ids / closed_ids
+    BoardScreen->>BoardScreen: save_state to disk
+    alt target is Done
+        BoardScreen->>GitHubAPI: set_issue_state closed (background thread)
+    end
+    alt source was Done and target is not Done
+        BoardScreen->>GitHubAPI: set_issue_state open (background thread)
+    end
+    BoardScreen->>BoardScreen: _render
+```
+
+---
+
+## Close / Reopen Flow
+```mermaid
+sequenceDiagram
+    actor User
+    participant DetailWindow
+    participant BoardScreen
+    participant GitHubAPI
+
+    User->>DetailWindow: click Close Issue / Reopen Issue
+    DetailWindow->>BoardScreen: on_close_issue(issue, new_state, done_cb)
+    BoardScreen->>GitHubAPI: PATCH /repos/{repo}/issues/{number} (background thread)
+    GitHubAPI-->>BoardScreen: 200 OK
+    BoardScreen->>BoardScreen: update closed_ids / wip_ids
+    BoardScreen->>BoardScreen: save_state to disk
+    BoardScreen->>BoardScreen: _render
+    BoardScreen->>DetailWindow: done_cb → destroy
+```
 
 ---
 
@@ -143,8 +190,10 @@ graph TD
     KanbanBoard --> ColDone[KanbanColumn Done]
     ColOpen & ColWIP & ColDone --> IssueCard
     IssueCard -- click --> DetailWindow
+    IssueCard -- drag --> KanbanColumn
     DetailWindow --> OpenGitHub[Open on GitHub]
-    DetailWindow --> ToggleWIP[Mark In Progress or Move to Open]
+    DetailWindow --> ToggleWIP[Mark In Progress]
+    DetailWindow --> CloseIssue[Close Issue / Reopen Issue]
 ```
 
 ---
@@ -155,11 +204,15 @@ flowchart LR
     GH[GitHub API] -->|JSON| api[github/api.py]
     api -->|Issue objects| board[BoardScreen]
     board -->|save| cache[(cache.json)]
+    board -->|save| state[(state.json)]
     cache -->|instant render| board
+    state -->|wip_ids + closed_ids| board
     board -->|classify| cols[KanbanColumn x3]
     cols -->|render| cards[IssueCard xN]
     cards -->|click| detail[DetailWindow]
+    cards -->|drag + drop| cols
     detail -->|toggle wip| board
+    detail -->|close/reopen| api
     board -->|re-render| cols
 ```
 
@@ -167,7 +220,7 @@ flowchart LR
 
 ## Config Files
 
-Both stored at `~/.issueboard/`:
+All stored at `~/.issueboard/`:
 
 **`config.json`** — authentication token, written after device flow and read on startup to skip login. Logout deletes the token key.
 ```json
@@ -194,6 +247,14 @@ Both stored at `~/.issueboard/`:
       "body": "..."
     }
   ]
+}
+```
+
+**`state.json`** — persisted board state. Survives restarts and cache refreshes. Written every time the user moves a card or toggles WIP.
+```json
+{
+  "wip_ids":    [123456, 789012],
+  "closed_ids": [345678]
 }
 ```
 
