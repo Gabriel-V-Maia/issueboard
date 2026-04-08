@@ -18,9 +18,13 @@ _BG_COLOR = {
 
 
 class KanbanColumn(ctk.CTkFrame):
-    def __init__(self, parent, title: str, on_open, **kw):
+    def __init__(self, parent, title: str, on_open, on_drop=None, on_drag_start=None, **kw):
         super().__init__(parent, fg_color=_BG_COLOR[title], corner_radius=10, **kw)
-        self._cards = []
+        self._title    = title
+        self._cards    = []
+        self._on_drop  = on_drop
+        self._on_drag_start = on_drag_start
+        self._highlighted = False
 
         hdr = ctk.CTkFrame(self, fg_color="transparent")
         hdr.pack(fill="x", padx=SP[3], pady=(SP[3], SP[2]))
@@ -52,7 +56,27 @@ class KanbanColumn(ctk.CTkFrame):
         self._count.configure(text="0")
 
     def add(self, issue: Issue):
-        card = IssueCard(self._scroll, issue, self._on_open)
+        card = IssueCard(
+            self._scroll, issue, self._on_open,
+            on_drag_start=self._on_drag_start,
+        )
         card.pack(fill="x", pady=(0, SP[2]))
         self._cards.append(card)
         self._count.configure(text=str(len(self._cards)))
+
+    def set_drop_highlight(self, active: bool):
+        if active == self._highlighted:
+            return
+        self._highlighted = active
+        color = COLORS.get("col_drop_highlight", COLORS["border"]) if active else _BG_COLOR[self._title]
+        self.configure(fg_color=color)
+
+    def contains_point(self, x_root: int, y_root: int) -> bool:
+        try:
+            wx = self.winfo_rootx()
+            wy = self.winfo_rooty()
+            ww = self.winfo_width()
+            wh = self.winfo_height()
+            return wx <= x_root <= wx + ww and wy <= y_root <= wy + wh
+        except Exception:
+            return False
